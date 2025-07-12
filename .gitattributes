@@ -1,0 +1,13 @@
+*.sql linguist-detectable
+*.yml linguist-detectable
+*.json linguist-detectable
+*.css linguist-detectable
+*.html linguist-detectable
+*.md linguist-detectable
+*.py linguist-detectable
+*.ipynb linguist-detectable
+*.csv linguist-detectable
+*.sh linguist-detectable
+*.txt linguist-detectable
+Dockerfile linguist-detectable
+.dockerignore linguist-detectable
