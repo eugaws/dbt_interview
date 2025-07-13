@@ -1,0 +1,701 @@
+version: 2
+
+models:
+  - name: dim_accounts
+    description: "Account dimension containing customer and company information with derived business segments"
+    columns:
+      - name: account_key
+        description: "Primary key for the account dimension"
+        tests:
+          - unique
+          - not_null
+      - name: account_name
+        description: "Official name of the account"
+        tests:
+          - not_null
+      - name: account_type
+        description: "Type of account (e.g., Customer, Partner, Competitor)"
+      - name: industry
+        description: "Industry classification of the account"
+      - name: annual_revenue
+        description: "Annual revenue of the account"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: number_of_employees
+        description: "Number of employees at the account"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: billing_country_clean
+        description: "Standardized billing country name"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['United States', 'France', 'Unknown']
+      - name: shipping_country_clean
+        description: "Standardized shipping country name"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['United States', 'France', 'Unknown']
+      - name: company_size_segment
+        description: "Revenue-based company size classification"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Enterprise', 'Large', 'Mid-Market', 'Small', 'Micro', 'Very Small', 'Unknown']
+      - name: employee_size_segment
+        description: "Employee count-based company size classification"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Enterprise', 'Large', 'Mid-Market', 'Small', 'Micro', 'Very Small', 'Unknown']
+      - name: industry_category
+        description: "Categorized industry grouping"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Technology', 'Services', 'Professional Services', 'Manufacturing', 'Other', 'Unknown']
+      - name: account_scope
+        description: "Domestic vs International account classification"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Domestic', 'International', 'Unknown']
+      - name: dbt_updated_at
+        description: "When this record was last updated by dbt"
+        tests:
+          - not_null
+
+  - name: dim_opportunities
+    description: "Opportunity dimension containing descriptive attributes for sales opportunities"
+    columns:
+      - name: opportunity_key
+        description: "Primary key for the opportunity dimension"
+        tests:
+          - unique
+          - not_null
+      - name: account_key
+        description: "Foreign key to the account dimension"
+        tests:
+          - relationships:
+              to: ref('dim_accounts')
+              field: account_key
+      - name: opportunity_name
+        description: "Name of the opportunity"
+        tests:
+          - not_null
+      - name: stage_name
+        description: "Current stage of the opportunity"
+        tests:
+          - not_null
+      - name: opportunity_status
+        description: "Current status of the opportunity"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Won', 'Lost', 'Open']
+      - name: lead_source_category
+        description: "Categorization of lead source"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Digital', 'Referral', 'Outbound', 'Events', 'Other']
+      - name: amount
+        description: "Opportunity amount"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: probability
+        description: "Opportunity probability percentage"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 100
+              inclusive: true
+      - name: deal_size_category
+        description: "Categorization of deal size"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Large Deal', 'Medium Deal', 'Small Deal', 'Micro Deal']
+      - name: probability_category
+        description: "Categorization of probability"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['High Probability', 'Medium Probability', 'Low Probability', 'Very Low Probability']
+      - name: timeline_category
+        description: "Categorization of timeline"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Overdue', 'Closing Soon', 'This Quarter', 'Future']
+      - name: stage_category
+        description: "Categorization of stage"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Early Stage', 'Advanced Stage', 'Closed', 'Mid Stage']
+      - name: business_type
+        description: "Type of business"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['New Business', 'Existing Business', 'Renewal', 'Other']
+      - name: created_at
+        description: "When the opportunity was created"
+        tests:
+          - not_null
+      - name: dbt_updated_at
+        description: "When this record was last updated by dbt"
+        tests:
+          - not_null
+
+  - name: dim_user_roles
+    description: "User role dimension containing role hierarchy and permissions"
+    columns:
+      - name: user_role_key
+        description: "Primary key for the user role dimension"
+        tests:
+          - unique
+          - not_null
+      - name: role_name
+        description: "Name of the role"
+        tests:
+          - not_null
+      - name: parent_role_id
+        description: "Reference to the parent role"
+        tests:
+          - relationships:
+              to: ref('dim_user_roles')
+              field: user_role_key
+              config:
+                severity: warn
+      - name: role_level
+        description: "Level of role in hierarchy"
+        tests:
+          - accepted_values:
+              values: ['Top Level', 'Subordinate']
+      - name: role_category
+        description: "Category of role"
+        tests:
+          - accepted_values:
+              values: ['C-Level', 'VP', 'Director', 'Manager', 'Sales', 'Marketing', 'Support', 'Other']
+      - name: user_type
+        description: "Type of user"
+        tests:
+          - accepted_values:
+              values: ['Portal User', 'Internal User']
+      - name: management_level
+        description: "Management level classification"
+        tests:
+          - accepted_values:
+              values: ['Executive', 'Senior Management', 'Middle Management', 'Team Level', 'Individual Contributor']
+      - name: functional_area
+        description: "Functional area classification"
+        tests:
+          - accepted_values:
+              values: ['Sales', 'Marketing', 'Customer Service', 'Human Resources', 'Operations', 'Other']
+      - name: scope_type
+        description: "Geographic or organizational scope"
+        tests:
+          - accepted_values:
+              values: ['Regional', 'International', 'Channel', 'General']
+      - name: has_parent_role
+        description: "Whether the role has a parent role"
+        tests:
+          - accepted_values:
+              values: [true, false]
+      - name: last_modified_at
+        description: "When the role was last modified"
+      - name: last_modified_by_id
+        description: "Reference to the user who last modified the role"
+        tests:
+          - relationships:
+              to: ref('dim_users')
+              field: user_key
+      - name: dbt_updated_at
+        description: "When this record was last updated by dbt"
+        tests:
+          - not_null
+
+  - name: dim_solutions
+    description: "Solution dimension containing knowledge base solutions"
+    columns:
+      - name: solution_key
+        description: "Primary key for the solution dimension"
+        tests:
+          - unique
+          - not_null
+      - name: solution_name
+        description: "Name of the solution"
+        tests:
+          - not_null
+      - name: solution_number
+        description: "Number of the solution"
+        tests:
+          - not_null
+      - name: case_id
+        description: "Reference to the associated case"
+        tests:
+          - relationships:
+              to: ref('dim_cases')
+              field: case_key
+              config:
+                severity: warn
+      - name: owner_id
+        description: "Reference to the solution owner"
+        tests:
+          - relationships:
+              to: ref('dim_users')
+              field: user_key
+      - name: visibility_level
+        description: "Level of visibility for the solution"
+        tests:
+          - accepted_values:
+              values: ['Public', 'Internal', 'Draft']
+      - name: review_status
+        description: "Review status of the solution"
+        tests:
+          - accepted_values:
+              values: ['Approved', 'Reviewed - Not Published', 'Published - Not Reviewed', 'Draft']
+      - name: usage_category
+        description: "Category of usage"
+        tests:
+          - accepted_values:
+              values: ['Highly Used', 'Frequently Used', 'Moderately Used', 'Rarely Used', 'Not Used']
+      - name: lifecycle_stage
+        description: "Stage in the lifecycle"
+        tests:
+          - accepted_values:
+              values: ['Active', 'In Progress', 'Archived', 'Other']
+      - name: publication_status
+        description: "Whether the solution is published or unpublished"
+        tests:
+          - accepted_values:
+              values: ['Published', 'Unpublished']
+      - name: review_indicator
+        description: "Whether the solution has been reviewed"
+        tests:
+          - accepted_values:
+              values: ['Reviewed', 'Not Reviewed']
+      - name: solution_type
+        description: "Whether the solution is linked to a case or standalone"
+        tests:
+          - accepted_values:
+              values: ['Case-Linked', 'Standalone']
+      - name: created_at
+        description: "When the solution was created"
+        tests:
+          - not_null
+      - name: created_by_id
+        description: "Reference to the user who created the solution"
+        tests:
+          - relationships:
+              to: ref('dim_users')
+              field: user_key
+      - name: last_modified_at
+        description: "When the solution was last modified"
+      - name: last_modified_by_id
+        description: "Reference to the user who last modified the solution"
+        tests:
+          - relationships:
+              to: ref('dim_users')
+              field: user_key
+      - name: dbt_updated_at
+        description: "When this record was last updated by dbt"
+        tests:
+          - not_null
+
+  - name: dim_users
+    description: "User dimension containing sales representatives and system users"
+    columns:
+      - name: user_key
+        description: "Primary key for the user dimension"
+        tests:
+          - unique
+          - not_null
+      - name: full_name
+        description: "Full name of the user"
+      - name: email
+        description: "Email address of the user"
+        tests:
+          - not_null
+      - name: is_active
+        description: "Whether the user is currently active"
+        tests:
+          - not_null
+      - name: user_status
+        description: "Current status of the user"
+        tests:
+          - accepted_values:
+              values: ['Active', 'Inactive']
+      - name: activity_status
+        description: "User's activity status (Recently Active, Active, Inactive, Never Logged In, Long Inactive, System User)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Recently Active', 'Active', 'Inactive', 'Never Logged In', 'Long Inactive', 'System User']
+      - name: user_type_category
+        description: "High-level user type grouping (System, Customer Support, Standard, Other)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['System', 'Customer Support', 'Standard', 'Other']
+      - name: manager_id
+        description: "Reference to the user's manager (if any)"
+        tests:
+          - relationships:
+              to: ref('dim_users')
+              field: user_key
+              config:
+                severity: warn
+      - name: contact_id
+        description: "Reference to the user's contact (if any)"
+        tests:
+          - relationships:
+              to: ref('dim_contacts')
+              field: contact_key
+              config:
+                severity: warn
+      - name: account_id
+        description: "Reference to the user's account (if any)"
+        tests:
+          - relationships:
+              to: ref('dim_accounts')
+              field: account_key
+              config:
+                severity: warn
+      - name: dbt_updated_at
+        description: "When this record was last updated by dbt"
+        tests:
+          - not_null
+
+  - name: dim_contacts
+    description: "Contact dimension containing individual contact information"
+    columns:
+      - name: contact_key
+        description: "Primary key for the contact dimension"
+        tests:
+          - unique
+          - not_null
+      - name: full_name
+        description: "Full name of the contact"
+      - name: email
+        description: "Email address of the contact"
+      - name: account_id
+        description: "Reference to the associated account"
+        tests:
+          - relationships:
+              to: ref('dim_accounts')
+              field: account_key
+      - name: created_at
+        description: "When the contact was created"
+        tests:
+          - not_null
+      - name: seniority_level
+        description: "Seniority level based on title"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['C-Level', 'VP', 'Director', 'Manager', 'Analyst', 'Other']
+      - name: functional_area
+        description: "Functional area based on title"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Sales', 'Marketing', 'Engineering', 'Finance', 'HR', 'Operations', 'Other']
+      - name: preferred_contact_method
+        description: "Preferred contact method"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Email', 'Phone', 'Mobile', 'Limited']
+      - name: mailing_country_clean
+        description: "Standardized mailing country"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['United States', 'France', 'Unknown']
+      - name: dbt_updated_at
+        description: "When this record was last updated by dbt"
+        tests:
+          - not_null
+
+  - name: dim_campaigns
+    description: "Campaign dimension containing marketing campaign information and attributes"
+    columns:
+      - name: campaign_key
+        description: "Primary key for the campaign dimension"
+        tests:
+          - unique
+          - not_null
+      - name: campaign_name
+        description: "Name of the campaign"
+        tests:
+          - not_null
+      - name: campaign_type
+        description: "Type of campaign"
+      - name: campaign_status
+        description: "Current status of the campaign"
+      - name: is_active
+        description: "Whether the campaign is currently active"
+        tests:
+          - not_null
+      - name: description
+        description: "Description of the campaign"
+      - name: parent_campaign_id
+        description: "Reference to parent campaign if this is a child campaign"
+      - name: start_date
+        description: "Start date of the campaign"
+      - name: end_date
+        description: "End date of the campaign"
+      - name: campaign_phase
+        description: "Current phase of the campaign (Planned, Active, Completed)"
+        tests:
+          - accepted_values:
+              values: ['Planned', 'Active', 'Completed']
+      - name: owner_id
+        description: "Reference to the campaign owner"
+      - name: created_at
+        description: "When the campaign was created"
+        tests:
+          - not_null
+      - name: created_by_id
+        description: "Reference to the user who created the campaign"
+      - name: last_modified_at
+        description: "When the campaign was last modified"
+      - name: last_modified_by_id
+        description: "Reference to the user who last modified the campaign"
+      - name: last_activity_at
+        description: "When the campaign had its last activity"
+      - name: dbt_updated_at
+        description: "When this record was last updated by dbt"
+        tests:
+          - not_null
+
+  - name: dim_products
+    description: "Product dimension containing product catalog information"
+    columns:
+      - name: product_key
+        description: "Primary key for the product dimension"
+        tests:
+          - unique
+          - not_null
+      - name: product_name
+        description: "Name of the product"
+        tests:
+          - not_null
+      - name: product_code
+        description: "Product code or SKU"
+      - name: is_active
+        description: "Whether the product is currently active"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+      - name: created_at
+        description: "When the product was created"
+        tests:
+          - not_null
+      - name: dbt_updated_at
+        description: "When this record was last updated by dbt"
+        tests:
+          - not_null
+
+  - name: dim_date
+    description: "Date dimension with calendar attributes"
+    columns:
+      - name: date_key
+        description: "Primary key for the date dimension"
+        tests:
+          - unique
+          - not_null
+      - name: date_actual
+        description: "Calendar date"
+        tests:
+          - not_null
+      - name: day_name_full
+        description: "Full name of the day of the week"
+        tests:
+          - accepted_values:
+              values: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+      - name: is_weekend
+        description: "Whether the date is a weekend"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+
+  - name: dim_leads
+    description: "Lead dimension containing sales lead information"
+    columns:
+      - name: lead_key
+        description: "Primary key for the lead dimension"
+        tests:
+          - unique
+          - not_null
+      - name: full_name
+        description: "Full name of the lead"
+      - name: email
+        description: "Email address of the lead"
+      - name: company
+        description: "Company name of the lead"
+      - name: lead_source
+        description: "Source of the lead"
+      - name: lead_status
+        description: "Current status of the lead"
+        tests:
+          - not_null
+      - name: is_converted
+        description: "Whether the lead has been converted"
+        tests:
+          - not_null
+      - name: created_at
+        description: "When the lead was created"
+        tests:
+          - not_null
+      - name: dbt_updated_at
+        description: "When this record was last updated by dbt"
+        tests:
+          - not_null
+
+  - name: dim_cases
+    description: "Case dimension containing customer support case information"
+    tests:
+      - dbt_utils.expression_is_true:
+          expression: "closed_date IS NULL OR created_at IS NULL OR closed_date >= created_at"
+          config:
+            severity: warn
+    columns:
+      - name: case_key
+        description: "Primary key for the case dimension"
+        tests:
+          - unique
+          - not_null
+      - name: case_number
+        description: "Case number identifier"
+        tests:
+          - not_null
+      - name: subject
+        description: "Subject of the case"
+      - name: case_type
+        description: "Type of case"
+      - name: case_status
+        description: "Current status of the case"
+        tests:
+          - not_null
+      - name: priority
+        description: "Priority level of the case"
+      - name: is_closed
+        description: "Whether the case is closed"
+        tests:
+          - not_null
+      - name: is_escalated
+        description: "Whether the case has been escalated"
+        tests:
+          - not_null
+      - name: priority_level
+        description: "Normalized priority level"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['High', 'Medium', 'Low', 'Unknown']
+      - name: case_stage
+        description: "Stage of the case"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Closed', 'Active', 'Open', 'Other']
+      - name: sla_status
+        description: "SLA status"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Violated', 'Met', 'Unknown']
+      - name: escalation_level
+        description: "Escalation level"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Critical Escalation', 'Medium Escalation', 'Low Priority Escalation', 'No Escalation']
+      - name: channel_clean
+        description: "Normalized channel"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Email', 'Phone', 'Web', 'Portal', 'Other']
+      - name: dbt_updated_at
+        description: "When this record was last updated by dbt"
+        tests:
+          - not_null 
+
+  - name: dim_pricebook_entries
+    description: "Dimension table for pricebook entries, linking products and pricebooks with pricing attributes."
+    columns:
+      - name: pricebook_entry_key
+        description: "Primary key for the pricebook entry dimension."
+        tests:
+          - unique
+          - not_null
+      - name: pricebook_key
+        description: "Foreign key to the pricebook dimension."
+        tests:
+          - not_null
+      - name: product_key
+        description: "Foreign key to the product dimension."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_products')
+              field: product_key
+      - name: created_by_key
+        description: "Foreign key to the user dimension (creator)."
+        tests:
+          - relationships:
+              to: ref('dim_users')
+              field: user_key
+      - name: last_modified_by_key
+        description: "Foreign key to the user dimension (last modifier)."
+        tests:
+          - relationships:
+              to: ref('dim_users')
+              field: user_key
+      - name: unitprice
+        description: "Unit price for the product in this pricebook."
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: isactive
+        description: "Whether the pricebook entry is active."
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: usestandardprice
+        description: "Whether the standard price is used."
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: created_at
+        description: "When the pricebook entry was created."
+        tests:
+          - not_null
+      - name: last_modified_at
+        description: "When the pricebook entry was last modified."
+        tests:
+          - not_null
+      - name: system_modified_at
+        description: "When the record was last modified by the system."
+        tests:
+          - not_null
+      - name: dbt_updated_at
+        description: "When this record was last updated by dbt."
+        tests:
+          - not_null 

@@ -20,14 +20,11 @@ clean-targets:
 models:
   elastic_dbt_interview:
     +database: dbt
-    intermediate:
+    dimensions:
+      +schema: dimensions
       +materialized: table
-      +schema: intermediate
-    marts:
-      +schema: marts
-      +materialized: table
-    reporting:
-      +schema: reporting
+    facts:
+      +schema: facts
       +materialized: table
     staging:
       +schema: staging

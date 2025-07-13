@@ -1,0 +1,103 @@
+{{
+  config(
+    materialized='table',
+    unique_key='lead_conversion_key'
+  )
+}}
+
+with lead_conversions as (
+    select * from {{ ref('stg_salesforce__lead') }}
+    where not isdeleted 
+    and (
+        -- Primary conversion criteria
+        (isconverted = true and converteddate is not null)
+        -- Fallback for data quality issues: use status-based conversion detection
+        or status = 'Closed - Converted'
+    )
+),
+
+final as (
+    select
+        -- Primary Key
+        lead_id || '_conversion' as lead_conversion_key,
+        
+        -- Foreign Keys (Dimension References)
+        lead_id as lead_key,
+        convertedaccountid as account_key,
+        convertedcontactid as contact_key,
+        convertedopportunityid as opportunity_key,
+        ownerid as owner_key,
+        createdbyid as created_by_key,
+        
+        -- Date Foreign Keys (with fallback logic for data quality issues)
+        case 
+            when converteddate is not null then date(cast(converteddate as timestamp))
+            when status = 'Closed - Converted' then date(cast(lastmodifieddate as timestamp))
+            else date(cast(createddate as timestamp))
+        end as converted_date_key,
+        date(cast(createddate as timestamp)) as lead_created_date_key,
+        
+        -- Conversion Event Information (with fallback logic)
+        case 
+            when converteddate is not null then cast(converteddate as timestamp)
+            when status = 'Closed - Converted' then cast(lastmodifieddate as timestamp)
+            else cast(createddate as timestamp)
+        end as conversion_date,
+        cast(createddate as timestamp) as lead_created_date,
+        
+        -- Key Metrics (Measures)
+        case 
+            when converteddate is not null then datediff('day', cast(createddate as timestamp), cast(converteddate as timestamp))
+            when status = 'Closed - Converted' then datediff('day', cast(createddate as timestamp), cast(lastmodifieddate as timestamp))
+            else 0
+        end as days_to_conversion,
+        coalesce(cast(annualrevenue as decimal(15,2)), 0.0) as converted_lead_revenue,
+        coalesce(cast(numberofemployees as decimal(10,0)), 0.0) as converted_lead_employees,
+        
+        -- Conversion Counts (for aggregation)
+        1 as conversion_count,
+        
+        -- Business Logic (Derived Measures)
+        case 
+            when converteddate is not null then
+                case 
+                    when datediff('day', cast(createddate as timestamp), cast(converteddate as timestamp)) <= 7 then 'Very Fast (≤7 days)'
+                    when datediff('day', cast(createddate as timestamp), cast(converteddate as timestamp)) <= 30 then 'Fast (8-30 days)'
+                    when datediff('day', cast(createddate as timestamp), cast(converteddate as timestamp)) <= 90 then 'Medium (31-90 days)'
+                    when datediff('day', cast(createddate as timestamp), cast(converteddate as timestamp)) <= 180 then 'Slow (91-180 days)'
+                    else 'Very Slow (>180 days)'
+                end
+            when status = 'Closed - Converted' then
+                case 
+                    when datediff('day', cast(createddate as timestamp), cast(lastmodifieddate as timestamp)) <= 7 then 'Very Fast (≤7 days)'
+                    when datediff('day', cast(createddate as timestamp), cast(lastmodifieddate as timestamp)) <= 30 then 'Fast (8-30 days)'
+                    when datediff('day', cast(createddate as timestamp), cast(lastmodifieddate as timestamp)) <= 90 then 'Medium (31-90 days)'
+                    when datediff('day', cast(createddate as timestamp), cast(lastmodifieddate as timestamp)) <= 180 then 'Slow (91-180 days)'
+                    else 'Very Slow (>180 days)'
+                end
+            else 'Unknown'
+        end as conversion_velocity,
+        
+        -- Conversion Success Flags
+        case when convertedopportunityid is not null then 1 else 0 end as created_opportunity_flag,
+        case when convertedaccountid is not null then 1 else 0 end as created_account_flag,
+        case when convertedcontactid is not null then 1 else 0 end as created_contact_flag,
+        
+        -- Data Quality Indicators
+        case when isconverted = true then 1 else 0 end as is_officially_converted,
+        case when converteddate is not null then 1 else 0 end as has_conversion_date,
+        case when status = 'Closed - Converted' then 1 else 0 end as status_indicates_conversion,
+        
+        -- Conversion Detection Method
+        case 
+            when isconverted = true and converteddate is not null then 'official'
+            when status = 'Closed - Converted' then 'status_fallback'
+            else 'unknown'
+        end as conversion_detection_method,
+        
+        current_timestamp as dbt_updated_at
+        
+    from lead_conversions
+)
+
+select * from final 

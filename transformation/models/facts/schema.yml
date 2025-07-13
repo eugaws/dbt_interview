@@ -1,0 +1,623 @@
+version: 2
+
+models:
+  - name: fct_opportunity_history
+    description: "Fact table containing opportunity history events with change metrics"
+    columns:
+      - name: opportunity_history_key
+        description: "Primary key for the opportunity history fact"
+        tests:
+          - unique
+          - not_null
+      - name: opportunity_key
+        description: "Foreign key to the opportunity dimension"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_opportunities')
+              field: opportunity_key
+      - name: account_key
+        description: "Foreign key to the account dimension"
+        tests:
+          - relationships:
+              to: ref('dim_accounts')
+              field: account_key
+      - name: contact_key
+        description: "Foreign key to the contact dimension"
+        tests:
+          - relationships:
+              to: ref('dim_contacts')
+              field: contact_key
+      - name: owner_key
+        description: "Foreign key to the user dimension"
+        tests:
+          - relationships:
+              to: ref('dim_users')
+              field: user_key
+      - name: campaign_key
+        description: "Foreign key to the campaign dimension"
+        tests:
+          - relationships:
+              to: ref('dim_campaigns')
+              field: campaign_key
+              config:
+                severity: warn
+      - name: created_by_key
+        description: "Foreign key to the user dimension"
+        tests:
+          - relationships:
+              to: ref('dim_users')
+              field: user_key
+      - name: created_date_key
+        description: "Foreign key to the date dimension"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+      - name: close_date_key
+        description: "Foreign key to the date dimension"
+        tests:
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+      - name: valid_through_date_key
+        description: "Foreign key to the date dimension"
+        tests:
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+      - name: prev_forecast_update_date_key
+        description: "Foreign key to the date dimension"
+        tests:
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+      - name: amount
+        description: "Amount at time of history event"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: amount_clean
+        description: "Amount with nulls converted to 0"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: expected_revenue
+        description: "Expected revenue at time of history event"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: expected_revenue_clean
+        description: "Expected revenue with nulls converted to 0"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: probability
+        description: "Probability at time of history event"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 100
+              inclusive: true
+      - name: probability_clean
+        description: "Probability with nulls converted to 0"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 100
+              inclusive: true
+      - name: prev_amount
+        description: "Previous amount before the change"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: prev_amount_clean
+        description: "Previous amount with nulls converted to 0"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: prev_close_date
+        description: "Previous close date before the change"
+      - name: stage_name
+        description: "Stage name at time of history event"
+      - name: from_stage_name
+        description: "Previous stage name before the change"
+      - name: from_forecast_category
+        description: "Previous forecast category before the change"
+      - name: forecast_category
+        description: "Forecast category at time of history event"
+      - name: stage_change_count
+        description: "Count of stage changes"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: amount_change_count
+        description: "Count of amount changes"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: close_date_change_count
+        description: "Count of close date changes"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: forecast_change_count
+        description: "Count of forecast changes"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: change_type
+        description: "Type of change that occurred"
+        tests:
+          - accepted_values:
+              values: ['Stage Change', 'Amount Change', 'Close Date Change', 'Forecast Change', 'Other Change']
+      - name: weighted_amount
+        description: "Amount weighted by probability"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: amount_change
+        description: "Change in amount from previous value"
+        tests:
+          - not_null
+      - name: amount_change_percentage
+        description: "Percentage change in amount from previous value"
+        tests:
+          - not_null
+      - name: history_event_count
+        description: "Count of history events"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [1]
+      - name: stage_to_closed_count
+        description: "Count of stage changes to closed"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: stage_to_won_count
+        description: "Count of stage changes to won"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: days_close_date_changed
+        description: "Number of days the close date was changed"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: days_since_history_event
+        description: "Number of days since the history event"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: opportunity_type
+        description: "Type of opportunity"
+      - name: lead_source
+        description: "Source of the lead"
+      - name: isclosed
+        description: "Whether the opportunity is closed"
+      - name: iswon
+        description: "Whether the opportunity is won"
+      - name: created_at
+        description: "When the history event was created"
+        tests:
+          - not_null
+      - name: close_date
+        description: "Close date of the opportunity"
+      - name: valid_through_date
+        description: "Date until which this history record is valid"
+      - name: prev_forecast_update
+        description: "Previous forecast update date"
+      - name: system_modified_at
+        description: "When the record was last modified by the system"
+      - name: dbt_updated_at
+        description: "When this record was last updated by dbt"
+        tests:
+          - not_null
+
+  - name: fct_case_history
+    description: "Fact table containing case history events with change metrics"
+    columns:
+      - name: case_history_key
+        description: "Primary key for the case history fact"
+        tests:
+          - unique
+          - not_null
+      - name: case_key
+        description: "Foreign key to the case dimension"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_cases')
+              field: case_key
+      - name: owner_key
+        description: "Foreign key to the user dimension"
+        tests:
+          - relationships:
+              to: ref('dim_users')
+              field: user_key
+      - name: last_modified_by_key
+        description: "Foreign key to the user dimension"
+        tests:
+          - relationships:
+              to: ref('dim_users')
+              field: user_key
+      - name: last_modified_date_key
+        description: "Foreign key to the date dimension"
+        tests:
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+      - name: previous_update_date_key
+        description: "Foreign key to the date dimension for previous update"
+        tests:
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+      - name: case_status
+        description: "Status of the case at time of history event"
+        tests:
+          - not_null
+      - name: days_since_previous_update
+        description: "Number of days since previous update"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: hours_since_previous_update
+        description: "Number of hours since previous update"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: history_event_count
+        description: "Count of history events"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [1]
+      - name: event_type
+        description: "Type of event"
+        tests:
+          - accepted_values:
+              values: ['Case Closed', 'Case Resolved', 'Case In Progress', 'Case Created', 'Case Opened', 'Case Escalated', 'Case Pending', 'Status Change']
+      - name: closure_event_count
+        description: "Count of closure events"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: escalation_event_count
+        description: "Count of escalation events"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: creation_event_count
+        description: "Count of creation events"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: progress_event_count
+        description: "Count of progress events"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: has_last_modified_date
+        description: "Flag indicating if last modified date is available"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [true, false]
+      - name: has_previous_update
+        description: "Flag indicating if previous update is available"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [true, false]
+      - name: has_valid_time_sequence
+        description: "Flag indicating if time sequence is valid"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [true, false]
+      - name: last_modified_at
+        description: "When the case was last modified"
+        tests:
+          - not_null
+      - name: previous_update_at
+        description: "When the case was previously updated"
+      - name: dbt_updated_at
+        description: "When this record was last updated by dbt"
+        tests:
+          - not_null
+
+  - name: fct_lead_conversions
+    description: "Fact table containing lead conversion events"
+    columns:
+      - name: lead_conversion_key
+        description: "Primary key for the lead conversion fact"
+        tests:
+          - unique
+          - not_null
+      - name: lead_key
+        description: "Foreign key to the lead dimension"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_leads')
+              field: lead_key
+      - name: account_key
+        description: "Foreign key to the account dimension"
+        tests:
+          - relationships:
+              to: ref('dim_accounts')
+              field: account_key
+              config:
+                severity: warn
+      - name: contact_key
+        description: "Foreign key to the contact dimension"
+        tests:
+          - relationships:
+              to: ref('dim_contacts')
+              field: contact_key
+              config:
+                severity: warn
+      - name: opportunity_key
+        description: "Foreign key to the opportunity dimension"
+        tests:
+          - relationships:
+              to: ref('dim_opportunities')
+              field: opportunity_key
+              config:
+                severity: warn
+      - name: owner_key
+        description: "Foreign key to the user dimension"
+        tests:
+          - relationships:
+              to: ref('dim_users')
+              field: user_key
+      - name: created_by_key
+        description: "Foreign key to the user dimension"
+        tests:
+          - relationships:
+              to: ref('dim_users')
+              field: user_key
+      - name: converted_date_key
+        description: "Foreign key to the date dimension"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+      - name: lead_created_date_key
+        description: "Foreign key to the date dimension"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+      - name: days_to_conversion
+        description: "Number of days to convert the lead"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: converted_lead_revenue
+        description: "Revenue from the converted lead"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: converted_lead_employees
+        description: "Number of employees from the converted lead"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: conversion_count
+        description: "Count of conversions"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [1]
+      - name: conversion_velocity
+        description: "Velocity of conversion"
+        tests:
+          - accepted_values:
+              values: ['Very Fast (≤7 days)', 'Fast (8-30 days)', 'Medium (31-90 days)', 'Slow (91-180 days)', 'Very Slow (>180 days)', 'Unknown']
+      - name: created_opportunity_flag
+        description: "Flag indicating if opportunity was created"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: created_account_flag
+        description: "Flag indicating if account was created"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: created_contact_flag
+        description: "Flag indicating if contact was created"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: is_officially_converted
+        description: "Flag indicating official conversion status"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: has_conversion_date
+        description: "Flag indicating if conversion date is available"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: status_indicates_conversion
+        description: "Flag indicating if status indicates conversion"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: conversion_detection_method
+        description: "Method used to detect conversion"
+        tests:
+          - accepted_values:
+              values: ['official', 'status_fallback', 'unknown']
+      - name: dbt_updated_at
+        description: "When this record was last updated by dbt"
+        tests:
+          - not_null
+
+  - name: fct_case_resolution
+    description: "Fact table containing case resolution events"
+    columns:
+      - name: case_resolution_key
+        description: "Primary key for the case resolution fact"
+        tests:
+          - unique
+          - not_null
+      - name: case_key
+        description: "Foreign key to the case dimension"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_cases')
+              field: case_key
+      - name: account_key
+        description: "Foreign key to the account dimension"
+        tests:
+          - relationships:
+              to: ref('dim_accounts')
+              field: account_key
+      - name: contact_key
+        description: "Foreign key to the contact dimension"
+        tests:
+          - relationships:
+              to: ref('dim_contacts')
+              field: contact_key
+      - name: owner_key
+        description: "Foreign key to the user dimension"
+        tests:
+          - relationships:
+              to: ref('dim_users')
+              field: user_key
+      - name: created_by_key
+        description: "Foreign key to the user dimension"
+        tests:
+          - relationships:
+              to: ref('dim_users')
+              field: user_key
+      - name: product_key
+        description: "Foreign key to the product dimension"
+        tests:
+          - relationships:
+              to: ref('dim_products')
+              field: product_key
+      - name: resolution_date_key
+        description: "Foreign key to the date dimension"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+      - name: case_created_date_key
+        description: "Foreign key to the date dimension"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+      - name: days_to_resolution
+        description: "Number of days to resolve the case"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: hours_to_resolution
+        description: "Number of hours to resolve the case"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: resolution_count
+        description: "Count of resolutions"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [1]
+      - name: escalated_count
+        description: "Count of escalated cases"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: resolution_speed
+        description: "Speed of resolution"
+        tests:
+          - accepted_values:
+              values: ['Same Day', 'Within 3 Days', 'Within 1 Week', 'Within 1 Month', 'Over 1 Month']
+      - name: sla_performance
+        description: "SLA performance status"
+        tests:
+          - accepted_values:
+              values: ['Met SLA', 'Missed SLA']
+      - name: priority_score
+        description: "Priority score for weighted analysis"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 4
+              inclusive: true
+      - name: resolution_quality
+        description: "Resolution quality classification"
+        tests:
+          - accepted_values:
+              values: ['High Quality', 'Good Quality', 'Poor Quality', 'Unknown']
+      - name: created_day_type
+        description: "Day type when case was created"
+        tests:
+          - accepted_values:
+              values: ['Weekend', 'Weekday']
+      - name: resolved_day_type
+        description: "Day type when case was resolved"
+        tests:
+          - accepted_values:
+              values: ['Weekend', 'Weekday']
+      - name: dbt_updated_at
+        description: "When this record was last updated by dbt"
+        tests:
+          - not_null 
