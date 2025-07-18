@@ -7,7 +7,7 @@ large_file_skip_byte_limit = 0
 encoding = utf-8
 
 [sqlfluff:templater:dbt]
-profiles_dir = ./
+profiles_dir = /Users/eugengabriel/.dbt
 
 [sqlfluff:templater:jinja]
 apply_dbt_builtins = True
