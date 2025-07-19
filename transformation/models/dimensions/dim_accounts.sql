@@ -21,17 +21,26 @@ final as (
         annualrevenue as annual_revenue,
         numberofemployees as number_of_employees,
         
+        -- Custom Business Fields
+        customerpriority__c as customer_priority,
+        sla__c as sla,
+        active__c as active,
+        numberoflocations__c as number_of_locations,
+        upsellopportunity__c as upsell_opportunity,
+        slaserialnumber__c as sla_serial_number,
+        slaexpirationdate__c as sla_expiration_date,
+        
         -- Location Information
         billingcountry as billing_country,
         case 
-            when upper(billingcountry) = 'UNITED STATES' then 'United States'
+            when upper(billingcountry) in ('USA', 'US', 'UNITED STATES') then 'United States'
             when upper(billingcountry) = 'FRANCE' then 'France'
             else 'Unknown'
         end as billing_country_clean,
         
         shippingcountry as shipping_country,
         case 
-            when upper(shippingcountry) = 'UNITED STATES' then 'United States'
+            when upper(shippingcountry) in ('USA', 'US', 'UNITED STATES') then 'United States'
             when upper(shippingcountry) = 'FRANCE' then 'France'
             else 'Unknown'
         end as shipping_country_clean,

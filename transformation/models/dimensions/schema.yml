@@ -69,6 +69,43 @@ models:
         description: "When this record was last updated by dbt"
         tests:
           - not_null
+      - name: customer_priority
+        description: "Customer priority classification (custom Salesforce field)"
+        tests:
+          - accepted_values:
+              values: ['High', 'Medium', 'Low', 'Unknown']
+              config:
+                severity: warn
+      - name: sla
+        description: "Service Level Agreement type (custom Salesforce field)"
+        tests:
+          - not_null
+      - name: active
+        description: "Account active status (custom Salesforce field)"
+        tests:
+          - accepted_values:
+              values: ['Yes', 'No', 'Active', 'Inactive', 'True', 'False', '1', '0', 'Unknown']
+              config:
+                severity: warn
+      - name: number_of_locations
+        description: "Number of locations for the account (custom Salesforce field)"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+              config:
+                severity: warn
+      - name: upsell_opportunity
+        description: "Upsell opportunity flag or type (custom Salesforce field)"
+        tests:
+          - accepted_values:
+              values: ['Yes', 'No', 'True', 'False', '1', '0', 'Unknown']
+              config:
+                severity: warn
+      - name: sla_serial_number
+        description: "SLA serial number (custom Salesforce field)"
+      - name: sla_expiration_date
+        description: "SLA expiration date (custom Salesforce field)"
 
   - name: dim_opportunities
     description: "Opportunity dimension containing descriptive attributes for sales opportunities"
@@ -511,10 +548,14 @@ models:
     description: "Date dimension with calendar attributes"
     columns:
       - name: date_key
-        description: "Primary key for the date dimension"
+        description: "Primary key for the date dimension in format 0000YYYYMMDD"
         tests:
           - unique
           - not_null
+          - dbt_utils.expression_is_true:
+              expression: "length(date_key) = 12 and left(date_key, 4) = '0000'"
+              config:
+                severity: warn
       - name: date_actual
         description: "Calendar date"
         tests:
