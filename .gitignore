@@ -153,3 +153,5 @@ dmypy.json
 
 # Ignore dbt virtual environment in parent directory
 ../dbt_venv/
+../dbt_v/
+dbt_v

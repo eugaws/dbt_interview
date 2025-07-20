@@ -1,7 +1,4 @@
 [sqlfluff]
-dialect = "duckdb"
+dialect = "postgres"
 templater = "dbt"
-
-[sqlfluff:rules]
-max_line_length = 120
-exclude_rules = "" 
+max_line_length = 120 
