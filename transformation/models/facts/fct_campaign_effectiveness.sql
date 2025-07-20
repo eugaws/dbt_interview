@@ -18,13 +18,9 @@ final as (
         -- Foreign Keys
         ownerid as owner_key,
         createdbyid as created_by_key,
-        name as campaign_name,
 
-        -- Date Keys
-        type as campaign_type,
-        status as campaign_status,
         isactive as is_active,
-        description,
+
 
         -- Campaign Info
         parentid as parent_campaign_id,

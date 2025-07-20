@@ -549,7 +549,7 @@ models:
     description: "Date dimension with calendar attributes"
     columns:
       - name: date_key
-        description: "Primary key for the date dimension in format 0000YYYYMMDD"
+        description: "Primary key for the date dimension in format YYYYMMDD"
         tests:
           - unique
           - not_null
