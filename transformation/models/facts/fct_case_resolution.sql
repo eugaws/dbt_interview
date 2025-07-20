@@ -44,22 +44,31 @@ final as (
         case when isescalated then 1 else 0 end as escalated_count,
         
         -- Business Logic (Derived Measures)
-        case 
-            when datediff('day', createddate, closeddate) <= 1 then 'Same Day'
-            when datediff('day', createddate, closeddate) <= 3 then 'Within 3 Days'
-            when datediff('day', createddate, closeddate) <= 7 then 'Within 1 Week'
-            when datediff('day', createddate, closeddate) <= 30 then 'Within 1 Month'
-            else 'Over 1 Month'
-        end as resolution_speed,
+
+        
+        -- One-hot encoding for resolution_speed
+        case when datediff('day', createddate, closeddate) <= 1 then 1 else 0 end as resolution_speed_same_day_flg,
+        case when datediff('day', createddate, closeddate) > 1 and datediff('day', createddate, closeddate) <= 3 then 1 else 0 end as resolution_speed_within_3_days_flg,
+        case when datediff('day', createddate, closeddate) > 3 and datediff('day', createddate, closeddate) <= 7 then 1 else 0 end as resolution_speed_within_1_week_flg,
+        case when datediff('day', createddate, closeddate) > 7 and datediff('day', createddate, closeddate) <= 30 then 1 else 0 end as resolution_speed_within_1_month_flg,
+        case when datediff('day', createddate, closeddate) > 30 then 1 else 0 end as resolution_speed_over_1_month_flg,
         
         -- Priority-based SLA Performance
-        case 
-            when priority = '1' and datediff('day', createddate, closeddate) <= 1 then 'Met SLA'
-            when priority = '2' and datediff('day', createddate, closeddate) <= 3 then 'Met SLA'
-            when priority = '3' and datediff('day', createddate, closeddate) <= 7 then 'Met SLA'
-            when priority = '4' and datediff('day', createddate, closeddate) <= 14 then 'Met SLA'
-            else 'Missed SLA'
-        end as sla_performance,
+
+        
+        -- One-hot encoding for sla_performance
+        case when (
+            (priority = '1' and datediff('day', createddate, closeddate) <= 1)
+            or (priority = '2' and datediff('day', createddate, closeddate) <= 3)
+            or (priority = '3' and datediff('day', createddate, closeddate) <= 7)
+            or (priority = '4' and datediff('day', createddate, closeddate) <= 14)
+        ) then 1 else 0 end as sla_performance_met_sla_flg,
+        case when not (
+            (priority = '1' and datediff('day', createddate, closeddate) <= 1)
+            or (priority = '2' and datediff('day', createddate, closeddate) <= 3)
+            or (priority = '3' and datediff('day', createddate, closeddate) <= 7)
+            or (priority = '4' and datediff('day', createddate, closeddate) <= 14)
+        ) then 1 else 0 end as sla_performance_missed_sla_flg,
         
         -- Priority Scoring (for weighted analysis)
         case 
@@ -78,16 +87,32 @@ final as (
             else 'Unknown'
         end as resolution_quality,
         
+        -- One-hot encoding for resolution_quality
+        case when not isescalated and datediff('day', createddate, closeddate) <= 7 then 1 else 0 end as resolution_quality_high_flg,
+        case when not isescalated and datediff('day', createddate, closeddate) > 7 and datediff('day', createddate, closeddate) <= 14 then 1 else 0 end as resolution_quality_good_flg,
+        case when isescalated or datediff('day', createddate, closeddate) > 14 then 1 else 0 end as resolution_quality_poor_flg,
+        case when not (
+            (not isescalated and datediff('day', createddate, closeddate) <= 7)
+            or (not isescalated and datediff('day', createddate, closeddate) > 7 and datediff('day', createddate, closeddate) <= 14)
+            or (isescalated or datediff('day', createddate, closeddate) > 14)
+        ) then 1 else 0 end as resolution_quality_unknown_flg,
+        
         -- Workload Indicators
         case 
             when extract(dow from createddate) in (0, 6) then 'Weekend'
             else 'Weekday'
         end as created_day_type,
-        
         case 
             when extract(dow from closeddate) in (0, 6) then 'Weekend'
             else 'Weekday'
         end as resolved_day_type,
+        
+        -- One-hot encoding for created_day_type
+        case when extract(dow from createddate) in (0, 6) then 1 else 0 end as created_day_type_weekend_flg,
+        case when extract(dow from createddate) not in (0, 6) then 1 else 0 end as created_day_type_weekday_flg,
+        -- One-hot encoding for resolved_day_type
+        case when extract(dow from closeddate) in (0, 6) then 1 else 0 end as resolved_day_type_weekend_flg,
+        case when extract(dow from closeddate) not in (0, 6) then 1 else 0 end as resolved_day_type_weekday_flg,
         
         current_timestamp as dbt_updated_at
         
