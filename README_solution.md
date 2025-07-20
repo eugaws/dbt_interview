@@ -13,6 +13,7 @@ This project is an analytical data mart based on dbt and DuckDB using sample Sal
 - **transformation/models/facts/** — fact models (facts: opportunity history, lead conversions, case resolution, etc.)
 - **transformation/models/dimensions/schema.yml** and **facts/schema.yml** — documentation and tests for models
 - **transformation/snapshots/** — snapshot models for tracking changes (e.g., for accounts)
+- **transformation/tests/** — custom and data quality tests
 - **.github/workflows/dbt.yml** — CI/CD pipeline for automatic code and model checks
 - **sqlfluff.toml** — configuration for SQLFluff (SQL linter)
 - **requirements.txt** — all Python dependencies for reproducible environment
@@ -45,7 +46,6 @@ This project is an analytical data mart based on dbt and DuckDB using sample Sal
   - **fct_campaign_effectiveness** — marketing campaign effectiveness: includes cost, response, lead, conversion, ROI metrics, and one-hot encoding for campaign type and status.
   - **fct_solution_usage** — knowledge base solution usage: includes usage metrics, publication/review flags, and format indicators.
 - Fact tables have foreign key relationships to dimensions, metrics, flags, and business logic.
-- Incremental loading (materialized='incremental') is used for large fact tables.
 
 ### 4. Model Testing
 - dbt tests are configured for all models:
@@ -106,8 +106,6 @@ This project is an analytical data mart based on dbt and DuckDB using sample Sal
    ```
 6. For CI/CD — just push or create a pull request to the `dev` or `main` branch
 
-> **Note:**  
-> SQLFluff is configured to use the `postgres` dialect for linting, as direct `duckdb` support is not available in the current version.
 
 ---
 
@@ -116,9 +114,16 @@ This project is an analytical data mart based on dbt and DuckDB using sample Sal
 - Use of surrogate keys and foreign keys
 - Maximum test coverage
 - Documentation for models and fields
-- Incremental loading for large fact tables
 - One-hot encoding for categorical features in fact tables
 - Linting and automation via CI/CD
+- Only real data quality warnings remain; all technical/test errors are fixed
+
+---
+
+## Adding Custom Tests
+- Place custom tests in `transformation/tests/`.
+- Example: `test_fct_solution_usage_custom.sql` checks that all `times_used` values are non-negative.
+- Use dbt's Jinja templating and SQL to create any logic you need.
 
 ---
 
