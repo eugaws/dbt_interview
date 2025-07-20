@@ -25,8 +25,7 @@ jobs:
           pip install dbt-duckdb sqlfluff
 
       - name: Lint SQL with SQLFluff
-        run: |
-          sqlfluff lint models/ --config sqlfluff.toml
+        run: sqlfluff lint transformation/models/ --config sqlfluff.toml
 
       - name: Run dbt deps
         run: dbt deps
