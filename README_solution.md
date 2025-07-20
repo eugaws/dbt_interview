@@ -15,6 +15,7 @@ This project is an analytical data mart based on dbt and DuckDB using sample Sal
 - **transformation/snapshots/** — snapshot models for tracking changes (e.g., for accounts)
 - **.github/workflows/dbt.yml** — CI/CD pipeline for automatic code and model checks
 - **sqlfluff.toml** — configuration for SQLFluff (SQL linter)
+- **requirements.txt** — all Python dependencies for reproducible environment
 
 ---
 
@@ -37,10 +38,12 @@ This project is an analytical data mart based on dbt and DuckDB using sample Sal
 
 ### 3. Building Fact Models
 - Main fact tables implemented:
-  - **fct_opportunity_history** — opportunity change history
-  - **fct_lead_conversions** — lead conversion facts (one-hot encoding for categorical fields)
-  - **fct_case_resolution** — case resolution facts
-  - **fct_case_history** — case history
+  - **fct_opportunity_history** — opportunity change history: tracks all changes in opportunity stage, amount, close date, probability, with change type flags, deltas, and stage progression indicators.
+  - **fct_lead_conversions** — lead conversion facts: includes conversion velocity, detection method, and one-hot encoded categorical features.
+  - **fct_case_resolution** — case resolution facts: includes resolution speed, SLA performance, quality, and one-hot encoded categorical features.
+  - **fct_case_history** — case history: tracks all case events with one-hot encoding for event types.
+  - **fct_campaign_effectiveness** — marketing campaign effectiveness: includes cost, response, lead, conversion, ROI metrics, and one-hot encoding for campaign type and status.
+  - **fct_solution_usage** — knowledge base solution usage: includes usage metrics, publication/review flags, and format indicators.
 - Fact tables have foreign key relationships to dimensions, metrics, flags, and business logic.
 - Incremental loading (materialized='incremental') is used for large fact tables.
 
@@ -73,19 +76,38 @@ This project is an analytical data mart based on dbt and DuckDB using sample Sal
 
 ---
 
+## Python Environment
+
+- All dependencies are listed in `requirements.txt`.
+- The recommended way is to use a virtual environment (`dbt_v`).
+- The venv folder is excluded from git via `.gitignore`.
+
+---
+
 ## How to Run the Project
 
 1. Clone the repository
-2. Install Python 3.11+, dbt-duckdb, sqlfluff
-3. Check/create profiles.yml for dbt (see example in transformation/profiles.yml)
-4. Run:
+2. Create and activate a virtual environment:
+   ```bash
+   python3 -m venv dbt_v
+   source dbt_v/bin/activate
+   ```
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+4. Check or create `profiles.yml` for dbt (see example in `transformation/profiles.yml`)
+5. Run dbt and lint:
    ```bash
    dbt deps
    dbt run
    dbt test
-   sqlfluff lint models/
+   sqlfluff lint transformation/models/ --config sqlfluff.toml
    ```
-5. For CI/CD — just push or create a pull request to the `dev` or `main` branch
+6. For CI/CD — just push or create a pull request to the `dev` or `main` branch
+
+> **Note:**  
+> SQLFluff is configured to use the `postgres` dialect for linting, as direct `duckdb` support is not available in the current version.
 
 ---
 
