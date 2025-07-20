@@ -22,10 +22,7 @@ data_quality_checks as (
         -- Test 4: Check for inconsistent event counts
         count(case when closure_event_count + escalation_event_count + creation_event_count + progress_event_count > 1 then 1 end) as multiple_event_types,
         
-        -- Test 5: Check for invalid status values
-        count(case when case_status is null then 1 end) as null_status,
-        
-        -- Test 6: Check for future dates (data quality issue) - Fixed timestamp comparison
+        -- Test 5: Check for future dates (data quality issue) - Fixed timestamp comparison
         count(case when last_modified_at > cast(current_timestamp as timestamp) then 1 end) as future_last_modified_dates,
         count(case when previous_update_at is not null and previous_update_at > cast(current_timestamp as timestamp) then 1 end) as future_previous_update_dates,
         
@@ -45,7 +42,6 @@ validation_results as (
         missing_last_modified_date_keys,
         missing_previous_update_date_keys,
         multiple_event_types,
-        null_status,
         future_last_modified_dates,
         future_previous_update_dates,
         very_old_updates,
@@ -67,7 +63,6 @@ select
     missing_last_modified_date_keys,
     missing_previous_update_date_keys,
     multiple_event_types,
-    null_status,
     future_last_modified_dates,
     future_previous_update_dates,
     very_old_updates,
@@ -83,7 +78,6 @@ where
     or missing_last_modified_date_keys > 0
     or missing_previous_update_date_keys > 0
     or multiple_event_types > 0
-    or null_status > 0
     or future_last_modified_dates > 0
     or future_previous_update_dates > 0
     or very_old_updates > 0

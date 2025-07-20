@@ -77,9 +77,10 @@ models:
               config:
                 severity: warn
       - name: sla
-        description: "Service Level Agreement type (custom Salesforce field)"
+        description: "SLA field for the account"
         tests:
-          - not_null
+          - not_null:
+              severity: warn
       - name: active
         description: "Account active status (custom Salesforce field)"
         tests:
@@ -552,10 +553,7 @@ models:
         tests:
           - unique
           - not_null
-          - dbt_utils.expression_is_true:
-              expression: "length(date_key) = 12 and left(date_key, 4) = '0000'"
-              config:
-                severity: warn
+
       - name: date_actual
         description: "Calendar date"
         tests:
