@@ -11,11 +11,10 @@ This project is an analytical data mart based on dbt and DuckDB using sample Sal
 - **transformation/models/staging/** — staging models (raw data from Salesforce)
 - **transformation/models/dimensions/** — dimension models (dimensions: accounts, contacts, users, products, cases, etc.)
 - **transformation/models/facts/** — fact models (facts: opportunity history, lead conversions, case resolution, etc.)
-- **transformation/models/dimensions/schema.yml** and **facts/schema.yml** — documentation and tests for models
 - **transformation/snapshots/** — snapshot models for tracking changes (e.g., for accounts)
 - **transformation/tests/** — custom and data quality tests
 - **.github/workflows/dbt.yml** — CI/CD pipeline for automatic code and model checks
-- **sqlfluff.toml** — configuration for SQLFluff (SQL linter)
+- **.sqlfluff** — configuration for SQLFluff (SQL linter)
 - **requirements.txt** — all Python dependencies for reproducible environment
 
 ---
@@ -79,8 +78,8 @@ This project is an analytical data mart based on dbt and DuckDB using sample Sal
 ## Python Environment
 
 - All dependencies are listed in `requirements.txt`.
-- The recommended way is to use a virtual environment (`dbt_v`).
-- The venv folder is excluded from git via `.gitignore`.
+- The recommended way is to use a virtual environment.
+
 
 ---
 
