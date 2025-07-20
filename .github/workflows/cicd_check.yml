@@ -40,13 +40,21 @@ jobs:
           fi
 
       - name: Run dbt deps
-        run: dbt deps
+        run: |
+          cd transformation
+          dbt deps
 
       - name: Run dbt compile
-        run: dbt compile
+        run: |
+          cd transformation
+          dbt compile
 
       - name: Run dbt run
-        run: dbt run
+        run: |
+          cd transformation
+          dbt run
 
       - name: Run dbt test
-        run: dbt test 
+        run: |
+          cd transformation
+          dbt test 
