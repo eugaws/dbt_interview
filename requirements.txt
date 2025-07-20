@@ -1,0 +1,4 @@
+dbt-core==1.6.18
+dbt-duckdb==1.6.2
+sqlfluff==3.4.2
+sqlfluff-templater-dbt==3.4.2

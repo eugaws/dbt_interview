@@ -57,26 +57,30 @@ final as (
         -- Conversion Counts (for aggregation)
         1 as conversion_count,
         
-        -- Business Logic (Derived Measures)
-        case 
-            when converteddate is not null then
-                case 
-                    when datediff('day', cast(createddate as timestamp), cast(converteddate as timestamp)) <= 7 then 'Very Fast (≤7 days)'
-                    when datediff('day', cast(createddate as timestamp), cast(converteddate as timestamp)) <= 30 then 'Fast (8-30 days)'
-                    when datediff('day', cast(createddate as timestamp), cast(converteddate as timestamp)) <= 90 then 'Medium (31-90 days)'
-                    when datediff('day', cast(createddate as timestamp), cast(converteddate as timestamp)) <= 180 then 'Slow (91-180 days)'
-                    else 'Very Slow (>180 days)'
-                end
-            when status = 'Closed - Converted' then
-                case 
-                    when datediff('day', cast(createddate as timestamp), cast(lastmodifieddate as timestamp)) <= 7 then 'Very Fast (≤7 days)'
-                    when datediff('day', cast(createddate as timestamp), cast(lastmodifieddate as timestamp)) <= 30 then 'Fast (8-30 days)'
-                    when datediff('day', cast(createddate as timestamp), cast(lastmodifieddate as timestamp)) <= 90 then 'Medium (31-90 days)'
-                    when datediff('day', cast(createddate as timestamp), cast(lastmodifieddate as timestamp)) <= 180 then 'Slow (91-180 days)'
-                    else 'Very Slow (>180 days)'
-                end
-            else 'Unknown'
-        end as conversion_velocity,
+        -- One-hot encoding for conversion_velocity
+        case when (
+            (converteddate is not null and datediff('day', cast(createddate as timestamp), cast(converteddate as timestamp)) <= 7)
+            or (status = 'Closed - Converted' and datediff('day', cast(createddate as timestamp), cast(lastmodifieddate as timestamp)) <= 7)
+        ) then 1 else 0 end as conversion_velocity_very_fast_flg,
+        case when (
+            (converteddate is not null and datediff('day', cast(createddate as timestamp), cast(converteddate as timestamp)) > 7 and datediff('day', cast(createddate as timestamp), cast(converteddate as timestamp)) <= 30)
+            or (status = 'Closed - Converted' and datediff('day', cast(createddate as timestamp), cast(lastmodifieddate as timestamp)) > 7 and datediff('day', cast(createddate as timestamp), cast(lastmodifieddate as timestamp)) <= 30)
+        ) then 1 else 0 end as conversion_velocity_fast_flg,
+        case when (
+            (converteddate is not null and datediff('day', cast(createddate as timestamp), cast(converteddate as timestamp)) > 30 and datediff('day', cast(createddate as timestamp), cast(converteddate as timestamp)) <= 90)
+            or (status = 'Closed - Converted' and datediff('day', cast(createddate as timestamp), cast(lastmodifieddate as timestamp)) > 30 and datediff('day', cast(createddate as timestamp), cast(lastmodifieddate as timestamp)) <= 90)
+        ) then 1 else 0 end as conversion_velocity_medium_flg,
+        case when (
+            (converteddate is not null and datediff('day', cast(createddate as timestamp), cast(converteddate as timestamp)) > 90 and datediff('day', cast(createddate as timestamp), cast(converteddate as timestamp)) <= 180)
+            or (status = 'Closed - Converted' and datediff('day', cast(createddate as timestamp), cast(lastmodifieddate as timestamp)) > 90 and datediff('day', cast(createddate as timestamp), cast(lastmodifieddate as timestamp)) <= 180)
+        ) then 1 else 0 end as conversion_velocity_slow_flg,
+        case when (
+            (converteddate is not null and datediff('day', cast(createddate as timestamp), cast(converteddate as timestamp)) > 180)
+            or (status = 'Closed - Converted' and datediff('day', cast(createddate as timestamp), cast(lastmodifieddate as timestamp)) > 180)
+        ) then 1 else 0 end as conversion_velocity_very_slow_flg,
+        case when (
+            (converteddate is null and status != 'Closed - Converted')
+        ) then 1 else 0 end as conversion_velocity_unknown_flg,
         
         -- Conversion Success Flags
         case when convertedopportunityid is not null then 1 else 0 end as created_opportunity_flag,
@@ -88,12 +92,10 @@ final as (
         case when converteddate is not null then 1 else 0 end as has_conversion_date,
         case when status = 'Closed - Converted' then 1 else 0 end as status_indicates_conversion,
         
-        -- Conversion Detection Method
-        case 
-            when isconverted = true and converteddate is not null then 'official'
-            when status = 'Closed - Converted' then 'status_fallback'
-            else 'unknown'
-        end as conversion_detection_method,
+        -- Conversion Detection Method (one-hot encoding)
+        case when isconverted = true and converteddate is not null then 1 else 0 end as conversion_detection_method_official_flg,
+        case when status = 'Closed - Converted' then 1 else 0 end as conversion_detection_method_status_fallback_flg,
+        case when not (isconverted = true and converteddate is not null) and status != 'Closed - Converted' then 1 else 0 end as conversion_detection_method_unknown_flg,
         
         current_timestamp as dbt_updated_at
         

@@ -238,7 +238,7 @@ models:
           - not_null
 
   - name: fct_case_history
-    description: "Fact table containing case history events with change metrics"
+    description: "Fact table containing case history events with one-hot encoded event type flags and minimal denormalized fields."
     columns:
       - name: case_history_key
         description: "Primary key for the case history fact"
@@ -259,13 +259,13 @@ models:
               to: ref('dim_users')
               field: user_key
       - name: last_modified_by_key
-        description: "Foreign key to the user dimension"
+        description: "Foreign key to the user dimension (last modifier)"
         tests:
           - relationships:
               to: ref('dim_users')
               field: user_key
       - name: last_modified_date_key
-        description: "Foreign key to the date dimension"
+        description: "Foreign key to the date dimension (last modified)"
         tests:
           - relationships:
               to: ref('dim_date')
@@ -276,10 +276,6 @@ models:
           - relationships:
               to: ref('dim_date')
               field: date_key
-      - name: case_status
-        description: "Status of the case at time of history event"
-        tests:
-          - not_null
       - name: days_since_previous_update
         description: "Number of days since previous update"
         tests:
@@ -293,56 +289,84 @@ models:
               min_value: 0
               inclusive: true
       - name: history_event_count
-        description: "Count of history events"
+        description: "Count of history events (always 1 for fact table)"
         tests:
           - not_null
           - accepted_values:
               values: [1]
-      - name: event_type
-        description: "Type of event"
-        tests:
-          - accepted_values:
-              values: ['Case Closed', 'Case Resolved', 'Case In Progress', 'Case Created', 'Case Opened', 'Case Escalated', 'Case Pending', 'Status Change']
       - name: closure_event_count
-        description: "Count of closure events"
+        description: "Count of closure events (1 if closed/resolved, 0 otherwise)"
         tests:
-          - not_null
           - accepted_values:
               values: [0, 1]
       - name: escalation_event_count
-        description: "Count of escalation events"
+        description: "Count of escalation events (1 if escalated, 0 otherwise)"
         tests:
-          - not_null
           - accepted_values:
               values: [0, 1]
       - name: creation_event_count
-        description: "Count of creation events"
+        description: "Count of creation events (1 if new, 0 otherwise)"
         tests:
-          - not_null
           - accepted_values:
               values: [0, 1]
       - name: progress_event_count
-        description: "Count of progress events"
+        description: "Count of progress events (1 if working/in progress, 0 otherwise)"
         tests:
-          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: event_type_case_closed_flg
+        description: "Flag for Case Closed event type"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+      - name: event_type_case_resolved_flg
+        description: "Flag for Case Resolved event type"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+      - name: event_type_case_in_progress_flg
+        description: "Flag for Case In Progress event type"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+      - name: event_type_case_created_flg
+        description: "Flag for Case Created event type"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+      - name: event_type_case_opened_flg
+        description: "Flag for Case Opened event type"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+      - name: event_type_case_escalated_flg
+        description: "Flag for Case Escalated event type"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+      - name: event_type_case_pending_flg
+        description: "Flag for Case Pending event type"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+      - name: event_type_status_change_flg
+        description: "Flag for Status Change event type (all other cases)"
+        tests:
           - accepted_values:
               values: [0, 1]
       - name: has_last_modified_date
         description: "Flag indicating if last modified date is available"
         tests:
-          - not_null
           - accepted_values:
               values: [true, false]
       - name: has_previous_update
         description: "Flag indicating if previous update is available"
         tests:
-          - not_null
           - accepted_values:
               values: [true, false]
       - name: has_valid_time_sequence
         description: "Flag indicating if time sequence is valid"
         tests:
-          - not_null
           - accepted_values:
               values: [true, false]
       - name: last_modified_at
@@ -357,7 +381,7 @@ models:
           - not_null
 
   - name: fct_lead_conversions
-    description: "Fact table containing lead conversion events"
+    description: "Fact table containing lead conversion events with one-hot encoded categorical features and minimal denormalized fields."
     columns:
       - name: lead_conversion_key
         description: "Primary key for the lead conversion fact"
@@ -408,51 +432,77 @@ models:
               to: ref('dim_users')
               field: user_key
       - name: converted_date_key
-        description: "Foreign key to the date dimension"
+        description: "Foreign key to the date dimension (conversion date)"
         tests:
           - not_null
           - relationships:
               to: ref('dim_date')
               field: date_key
       - name: lead_created_date_key
-        description: "Foreign key to the date dimension"
+        description: "Foreign key to the date dimension (lead created date)"
         tests:
           - not_null
           - relationships:
               to: ref('dim_date')
               field: date_key
+      - name: conversion_date
+        description: "Timestamp when the lead was converted"
+      - name: lead_created_date
+        description: "Timestamp when the lead was created"
       - name: days_to_conversion
         description: "Number of days to convert the lead"
         tests:
-          - not_null
           - dbt_utils.accepted_range:
               min_value: 0
               inclusive: true
       - name: converted_lead_revenue
         description: "Revenue from the converted lead"
         tests:
-          - not_null
           - dbt_utils.accepted_range:
               min_value: 0
               inclusive: true
       - name: converted_lead_employees
         description: "Number of employees from the converted lead"
         tests:
-          - not_null
           - dbt_utils.accepted_range:
               min_value: 0
               inclusive: true
       - name: conversion_count
-        description: "Count of conversions"
+        description: "Count of conversions (always 1 for fact table)"
         tests:
           - not_null
           - accepted_values:
               values: [1]
-      - name: conversion_velocity
-        description: "Velocity of conversion"
+      - name: conversion_velocity_very_fast_flg
+        description: "Flag for very fast conversion (≤7 days)"
         tests:
           - accepted_values:
-              values: ['Very Fast (≤7 days)', 'Fast (8-30 days)', 'Medium (31-90 days)', 'Slow (91-180 days)', 'Very Slow (>180 days)', 'Unknown']
+              values: [0, 1]
+      - name: conversion_velocity_fast_flg
+        description: "Flag for fast conversion (8-30 days)"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+      - name: conversion_velocity_medium_flg
+        description: "Flag for medium conversion (31-90 days)"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+      - name: conversion_velocity_slow_flg
+        description: "Flag for slow conversion (91-180 days)"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+      - name: conversion_velocity_very_slow_flg
+        description: "Flag for very slow conversion (>180 days)"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+      - name: conversion_velocity_unknown_flg
+        description: "Flag for unknown conversion velocity"
+        tests:
+          - accepted_values:
+              values: [0, 1]
       - name: created_opportunity_flag
         description: "Flag indicating if opportunity was created"
         tests:
@@ -489,11 +539,21 @@ models:
           - not_null
           - accepted_values:
               values: [0, 1]
-      - name: conversion_detection_method
-        description: "Method used to detect conversion"
+      - name: conversion_detection_method_official_flg
+        description: "Flag for official conversion detection method"
         tests:
           - accepted_values:
-              values: ['official', 'status_fallback', 'unknown']
+              values: [0, 1]
+      - name: conversion_detection_method_status_fallback_flg
+        description: "Flag for status fallback conversion detection method"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+      - name: conversion_detection_method_unknown_flg
+        description: "Flag for unknown conversion detection method"
+        tests:
+          - accepted_values:
+              values: [0, 1]
       - name: dbt_updated_at
         description: "When this record was last updated by dbt"
         tests:
@@ -617,6 +677,408 @@ models:
         tests:
           - accepted_values:
               values: ['Weekend', 'Weekday']
+      - name: dbt_updated_at
+        description: "When this record was last updated by dbt"
+        tests:
+          - not_null 
+
+  - name: fct_campaign_effectiveness
+    description: "Fact table containing marketing campaign effectiveness metrics and flags"
+    columns:
+      - name: campaign_effectiveness_key
+        description: "Primary key for the campaign effectiveness fact (campaign_id + created date)"
+        tests:
+          - unique
+          - not_null
+      - name: campaign_key
+        description: "Foreign key to the campaign dimension"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_campaigns')
+              field: campaign_key
+      - name: owner_key
+        description: "Foreign key to the user dimension (campaign owner)"
+        tests:
+          - relationships:
+              to: ref('dim_users')
+              field: user_key
+              config:
+                severity: warn
+      - name: created_by_key
+        description: "Foreign key to the user dimension (campaign creator)"
+        tests:
+          - relationships:
+              to: ref('dim_users')
+              field: user_key
+              config:
+                severity: warn
+      - name: created_date_key
+        description: "Foreign key to the date dimension (campaign created)"
+        tests:
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+              config:
+                severity: warn
+      - name: last_modified_date_key
+        description: "Foreign key to the date dimension (last modified)"
+        tests:
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+              config:
+                severity: warn
+      - name: start_date_key
+        description: "Foreign key to the date dimension (campaign start)"
+        tests:
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+              config:
+                severity: warn
+      - name: end_date_key
+        description: "Foreign key to the date dimension (campaign end)"
+        tests:
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+              config:
+                severity: warn
+      - name: campaign_name
+        description: "Name of the campaign"
+        tests:
+          - not_null
+      - name: campaign_type
+        description: "Type of campaign (e.g., Webinar, Conference, Email, Advertisement, Trade Show, Direct Mail, Other)"
+      - name: campaign_type_webinar_flg
+        description: "Flag for Webinar campaign type (1 if Webinar, 0 otherwise)"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+      - name: campaign_type_conference_flg
+        description: "Flag for Conference campaign type (1 if Conference, 0 otherwise)"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+      - name: campaign_type_email_flg
+        description: "Flag for Email campaign type (1 if Email, 0 otherwise)"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+      - name: campaign_type_advertisement_flg
+        description: "Flag for Advertisement campaign type (1 if Advertisement, 0 otherwise)"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+      - name: campaign_type_tradeshow_flg
+        description: "Flag for Trade Show campaign type (1 if Trade Show, 0 otherwise)"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+      - name: campaign_type_directmail_flg
+        description: "Flag for Direct Mail campaign type (1 if Direct Mail, 0 otherwise)"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+      - name: campaign_type_other_flg
+        description: "Flag for Other campaign type (1 if Other, 0 otherwise)"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+      - name: campaign_status
+        description: "Status of the campaign (e.g., Planned, In Progress, Completed, Aborted, Cancelled)"
+      - name: campaign_status_planned_flg
+        description: "Flag for Planned campaign status (1 if Planned, 0 otherwise)"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+      - name: campaign_status_inprogress_flg
+        description: "Flag for In Progress campaign status (1 if In Progress, 0 otherwise)"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+      - name: campaign_status_completed_flg
+        description: "Flag for Completed campaign status (1 if Completed, 0 otherwise)"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+      - name: campaign_status_aborted_flg
+        description: "Flag for Aborted campaign status (1 if Aborted, 0 otherwise)"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+      - name: campaign_status_cancelled_flg
+        description: "Flag for Cancelled campaign status (1 if Cancelled, 0 otherwise)"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+      - name: is_active
+        description: "Flag indicating if the campaign is active (1 if active, 0 otherwise)"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+      - name: description
+        description: "Description of the campaign"
+      - name: parent_campaign_id
+        description: "Reference to parent campaign if this is a child campaign"
+      - name: number_sent
+        description: "Number of messages sent in the campaign"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: number_of_leads
+        description: "Number of leads generated by the campaign"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: number_of_converted_leads
+        description: "Number of leads converted by the campaign"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: number_of_contacts
+        description: "Number of contacts associated with the campaign"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: number_of_responses
+        description: "Number of responses to the campaign"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: number_of_opportunities
+        description: "Number of opportunities generated by the campaign"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: number_of_won_opportunities
+        description: "Number of won opportunities generated by the campaign"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: amount_all_opportunities
+        description: "Total amount of all opportunities generated by the campaign"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: amount_won_opportunities
+        description: "Total amount of won opportunities generated by the campaign"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: expected_revenue
+        description: "Expected revenue from the campaign"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: budgeted_cost
+        description: "Budgeted cost of the campaign"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: actual_cost
+        description: "Actual cost of the campaign"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: cost_per_lead
+        description: "Cost per lead generated by the campaign"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+              config:
+                severity: warn
+      - name: cost_per_opportunity
+        description: "Cost per opportunity generated by the campaign"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+              config:
+                severity: warn
+      - name: cost_per_won_opportunity
+        description: "Cost per won opportunity generated by the campaign"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+              config:
+                severity: warn
+      - name: lead_conversion_rate
+        description: "Conversion rate of leads to converted leads"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 1
+              inclusive: true
+              config:
+                severity: warn
+      - name: win_rate
+        description: "Win rate of opportunities generated by the campaign"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 1
+              inclusive: true
+              config:
+                severity: warn
+      - name: roi
+        description: "Return on investment for the campaign"
+      - name: hierarchy_number_of_leads
+        description: "Number of leads in the campaign hierarchy"
+      - name: hierarchy_number_of_converted_leads
+        description: "Number of converted leads in the campaign hierarchy"
+      - name: hierarchy_number_of_contacts
+        description: "Number of contacts in the campaign hierarchy"
+      - name: hierarchy_number_of_responses
+        description: "Number of responses in the campaign hierarchy"
+      - name: hierarchy_number_of_opportunities
+        description: "Number of opportunities in the campaign hierarchy"
+      - name: hierarchy_number_of_won_opportunities
+        description: "Number of won opportunities in the campaign hierarchy"
+      - name: hierarchy_amount_all_opportunities
+        description: "Total amount of all opportunities in the campaign hierarchy"
+      - name: hierarchy_amount_won_opportunities
+        description: "Total amount of won opportunities in the campaign hierarchy"
+      - name: hierarchy_number_sent
+        description: "Number of messages sent in the campaign hierarchy"
+      - name: hierarchy_expected_revenue
+        description: "Expected revenue in the campaign hierarchy"
+      - name: hierarchy_budgeted_cost
+        description: "Budgeted cost in the campaign hierarchy"
+      - name: hierarchy_actual_cost
+        description: "Actual cost in the campaign hierarchy"
+      - name: created_at
+        description: "When the campaign was created"
+        tests:
+          - not_null
+      - name: last_modified_at
+        description: "When the campaign was last modified"
+      - name: last_activity_at
+        description: "When the campaign had its last activity"
+      - name: dbt_updated_at
+        description: "When this record was last updated by dbt"
+        tests:
+          - not_null 
+
+  - name: fct_solution_usage
+    description: "Fact table containing solution (knowledge base) usage metrics and publication flags"
+    columns:
+      - name: solution_usage_key
+        description: "Primary key for the solution usage fact (solution_id + created date)"
+        tests:
+          - unique
+          - not_null
+      - name: solution_key
+        description: "Foreign key to the solution dimension"
+        tests:
+          - not_null
+      - name: case_key
+        description: "Foreign key to the case dimension (if solution is linked to a case)"
+        tests:
+          - relationships:
+              to: ref('dim_cases')
+              field: case_key
+              config:
+                severity: warn
+      - name: owner_key
+        description: "Foreign key to the user dimension (solution owner)"
+        tests:
+          - relationships:
+              to: ref('dim_users')
+              field: user_key
+              config:
+                severity: warn
+      - name: created_by_key
+        description: "Foreign key to the user dimension (solution creator)"
+        tests:
+          - relationships:
+              to: ref('dim_users')
+              field: user_key
+              config:
+                severity: warn
+      - name: created_date_key
+        description: "Foreign key to the date dimension (solution created)"
+        tests:
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+              config:
+                severity: warn
+      - name: last_modified_date_key
+        description: "Foreign key to the date dimension (last modified)"
+        tests:
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+              config:
+                severity: warn
+      - name: solution_number
+        description: "Solution number identifier"
+        tests:
+          - not_null
+      - name: solution_name
+        description: "Name of the solution"
+        tests:
+          - not_null
+      - name: solution_status
+        description: "Status of the solution (e.g., Draft, Published, Reviewed)"
+      - name: is_published
+        description: "Raw publication flag from Salesforce (boolean)"
+      - name: is_published_in_public_kb
+        description: "Raw public knowledge base publication flag (boolean)"
+      - name: is_reviewed
+        description: "Raw reviewed flag (boolean)"
+      - name: solution_note
+        description: "Solution note or description"
+      - name: is_html
+        description: "Flag indicating if the solution is in HTML format (boolean)"
+      - name: times_used
+        description: "Number of times the solution was used"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: is_published_flg
+        description: "Flag for published solution (1 if published, 0 otherwise)"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+      - name: is_published_in_public_kb_flg
+        description: "Flag for public knowledge base publication (1 if published, 0 otherwise)"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+      - name: is_reviewed_flg
+        description: "Flag for reviewed solution (1 if reviewed, 0 otherwise)"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+      - name: is_html_flg
+        description: "Flag for HTML format (1 if HTML, 0 otherwise)"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+      - name: created_at
+        description: "When the solution was created"
+        tests:
+          - not_null
+      - name: last_modified_at
+        description: "When the solution was last modified"
       - name: dbt_updated_at
         description: "When this record was last updated by dbt"
         tests:

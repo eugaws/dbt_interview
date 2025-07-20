@@ -63,14 +63,6 @@ final as (
         coalesce(cast(prevamount as decimal(15,2)), 0.0) as prev_amount_clean,
         cast(prevclosedate as timestamp) as prev_close_date,
         
-        -- Stage Information
-        stagename as stage_name,
-        fromopportunitystagename as from_stage_name,
-        
-        -- Forecast Information
-        fromforecastcategory as from_forecast_category,
-        forecastcategory as forecast_category,
-        
         -- Change Detection Flags
         case 
             when fromopportunitystagename is not null and fromopportunitystagename != stagename then 1 
