@@ -26,7 +26,7 @@ jobs:
 
       - name: Lint SQL with SQLFluff
         run: |
-          sqlfluff lint models/
+          sqlfluff lint models/ --config sqlfluff.toml
 
       - name: Run dbt deps
         run: dbt deps
