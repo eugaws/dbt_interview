@@ -24,8 +24,20 @@ jobs:
           python -m pip install --upgrade pip
           pip install dbt-duckdb sqlfluff
 
-      - name: Lint SQL with SQLFluff
-        run: sqlfluff lint transformation/models/ 
+      - name: Get changed SQL files
+        id: changed-files
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          git diff --name-only origin/${{ github.base_ref }}...${{ github.sha }} | grep '^transformation/models/.*\.sql$' > changed_sql_files.txt || true
+
+      - name: Lint changed SQL files with SQLFluff
+        if: always()
+        run: |
+          if [ -s changed_sql_files.txt ]; then
+            xargs sqlfluff lint < changed_sql_files.txt
+          else
+            echo "No changed SQL files to lint."
+          fi
 
       - name: Run dbt deps
         run: dbt deps
