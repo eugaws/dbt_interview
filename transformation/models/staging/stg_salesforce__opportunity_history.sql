@@ -1,5 +1,3 @@
-
-
 with source as (
 
     select * from {{ source('salesforce', 'opportunity_history') }}
@@ -9,7 +7,7 @@ with source as (
 renamed as (
 
     select
-        id opportunity_history_id,
+        id as opportunity_history_id,
         opportunityid,
         createdbyid,
         createddate,

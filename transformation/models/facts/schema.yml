@@ -644,16 +644,6 @@ models:
           - not_null
           - accepted_values:
               values: [0, 1]
-      - name: resolution_speed
-        description: "Speed of resolution"
-        tests:
-          - accepted_values:
-              values: ['Same Day', 'Within 3 Days', 'Within 1 Week', 'Within 1 Month', 'Over 1 Month']
-      - name: sla_performance
-        description: "SLA performance status"
-        tests:
-          - accepted_values:
-              values: ['Met SLA', 'Missed SLA']
       - name: priority_score
         description: "Priority score for weighted analysis"
         tests:
@@ -1027,14 +1017,6 @@ models:
               field: date_key
               config:
                 severity: warn
-      - name: solution_number
-        description: "Solution number identifier"
-        tests:
-          - not_null
-      - name: solution_name
-        description: "Name of the solution"
-        tests:
-          - not_null
       - name: solution_status
         description: "Status of the solution (e.g., Draft, Published, Reviewed)"
       - name: is_published

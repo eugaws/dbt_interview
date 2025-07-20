@@ -1,0 +1,60 @@
+name: dbt + SQLFluff CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install dbt-duckdb sqlfluff
+
+      - name: Get changed SQL files
+        id: changed-files
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          git diff --name-only origin/${{ github.base_ref }}...${{ github.sha }} | grep '^transformation/models/.*\.sql$' > changed_sql_files.txt || true
+
+      - name: Lint changed SQL files with SQLFluff
+        if: always()
+        run: |
+          if [ -s changed_sql_files.txt ]; then
+            xargs sqlfluff lint < changed_sql_files.txt
+          else
+            echo "No changed SQL files to lint."
+          fi
+
+      - name: Run dbt deps
+        run: |
+          cd transformation
+          dbt deps
+
+      - name: Run dbt compile
+        run: |
+          cd transformation
+          dbt compile
+
+      - name: Run dbt run
+        run: |
+          cd transformation
+          dbt run
+
+      - name: Run dbt test
+        run: |
+          cd transformation
+          dbt test 

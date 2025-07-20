@@ -34,4 +34,4 @@ final as (
     from pricebook_entries
 )
 
-select * from final 
+select * from final

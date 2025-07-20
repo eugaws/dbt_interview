@@ -1,5 +1,3 @@
-
-
 with source as (
 
     select * from {{ source('salesforce', 'pricebook_entry') }}

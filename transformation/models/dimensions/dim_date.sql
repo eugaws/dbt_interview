@@ -12,7 +12,7 @@ with date_spine as (
 final as (
     select
         -- Primary Key
-        '0000' || cast(year_number as varchar) || lpad(month_of_year::varchar, 2, '0') || lpad(day_of_month::varchar, 2, '0') as date_key,
+        date_day as date_key,
         
         -- Date Information
         date_day as date_actual,
