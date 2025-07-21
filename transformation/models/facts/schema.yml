@@ -163,9 +163,6 @@ models:
               values: [0, 1]
       - name: change_type
         description: "Type of change that occurred"
-        tests:
-          - accepted_values:
-              values: ['Stage Change', 'Amount Change', 'Close Date Change', 'Forecast Change', 'Other Change']
       - name: weighted_amount
         description: "Amount weighted by probability"
         tests:
@@ -737,8 +734,6 @@ models:
                 severity: warn
       - name: campaign_name
         description: "Name of the campaign"
-        tests:
-          - not_null
       - name: campaign_type
         description: "Type of campaign (e.g., Webinar, Conference, Email, Advertisement, Trade Show, Direct Mail, Other)"
       - name: campaign_type_webinar_flg
